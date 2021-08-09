@@ -1,0 +1,9 @@
+{
+    "description": "",
+    "name": "modelForecast",
+    "fromTemplate": "com.sap.dsp.templates.python_producer_template",
+    "createdAt": "2021-08-05T08:25:57Z",
+    "createdBy": "pritamjena",
+    "modifiedAt": "2021-08-05T08:25:57Z",
+    "modifiedBy": "pritamjena"
+}

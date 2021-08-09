@@ -1,0 +1,9 @@
+{
+    "description": "Rest API for real time predictions",
+    "name": "Titanic consumer Rest api",
+    "fromTemplate": "com.sap.dsp.templates.python_consumer_template",
+    "createdAt": "2021-08-05T07:32:26Z",
+    "createdBy": "manisha",
+    "modifiedAt": "2021-08-05T07:32:26Z",
+    "modifiedBy": "manisha"
+}

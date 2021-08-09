@@ -1,0 +1,254 @@
+{
+    "properties": {},
+    "description": "",
+    "processes": {
+        "workflowtrigger1": {
+            "component": "com.sap.dh.trigger",
+            "metadata": {
+                "label": "Workflow Trigger",
+                "x": 12,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {}
+            }
+        },
+        "readfile1": {
+            "component": "com.sap.file.read",
+            "metadata": {
+                "label": "Read File",
+                "x": 295.9999990463257,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "mode": "Once",
+                    "connection": {
+                        "configurationType": "Connection Management",
+                        "connectionID": "DI_DATA_LAKE"
+                    },
+                    "path": "/shared/havells_trail/raw/forecast_data.csv"
+                }
+            }
+        },
+        "tofile1": {
+            "component": "com.sap.file.toFile",
+            "metadata": {
+                "label": "To File",
+                "x": 196.99999904632568,
+                "y": 27,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        },
+        "wiretap1": {
+            "component": "com.sap.util.wiretap",
+            "metadata": {
+                "label": "Wiretap",
+                "x": 480.99999809265137,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "ui": "dynpath",
+                "config": {}
+            }
+        },
+        "python3operator1": {
+            "component": "com.sap.system.python3Operator",
+            "metadata": {
+                "label": "Python3 Operator",
+                "x": 780.9999961853027,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {
+                    "script": "import pandas as pd\nimport io\nfrom datetime import datetime\n\n#Read the dataframe\ndef on_input(data):\n    data_stream=io.StringIO(data)\n    df=pd.read_csv(data_stream,parse_dates=['calendar_year_month'])\n    \n    #Ticket information\n    df['calendar_year_month']=df['calendar_year_month'].apply(lambda x: datetime.strptime(x, '%Y%m'))\n    df['qty_final']=df['qty_final'].ffill(axis=0)\n    df=df[['calendar_year_month','qty_final']]\n\n    \n    api.send('output',api.Message(body=df.to_csv(index=False,header=True)))\n\napi.set_port_callback('input',on_input)\n    "
+                },
+                "additionalinports": [
+                    {
+                        "name": "input1",
+                        "type": "any.*"
+                    },
+                    {
+                        "name": "input",
+                        "type": "string"
+                    }
+                ],
+                "additionaloutports": [
+                    {
+                        "name": "out",
+                        "type": "message"
+                    },
+                    {
+                        "name": "output",
+                        "type": "message"
+                    }
+                ]
+            }
+        },
+        "wiretap2": {
+            "component": "com.sap.util.wiretap",
+            "metadata": {
+                "label": "Wiretap",
+                "x": 949.9999961853027,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "ui": "dynpath",
+                "config": {}
+            }
+        },
+        "tostringconverter1": {
+            "component": "com.sap.util.toStringConverter",
+            "metadata": {
+                "label": "ToString Converter",
+                "x": 665.999997138977,
+                "y": 27,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        },
+        "writefile1": {
+            "component": "com.sap.file.write",
+            "metadata": {
+                "label": "Write File",
+                "x": 1233.9999952316284,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "pathMode": "Static (from configuration)",
+                    "connection": {
+                        "configurationType": "Connection Management",
+                        "connectionID": "DI_DATA_LAKE"
+                    },
+                    "path": "/shared/havells_trail/raw/TSA.csv"
+                }
+            }
+        },
+        "tofile2": {
+            "component": "com.sap.file.toFile",
+            "metadata": {
+                "label": "To File",
+                "x": 1134.9999952316284,
+                "y": 27,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        }
+    },
+    "groups": [],
+    "connections": [
+        {
+            "metadata": {
+                "points": "136,52 163.99999952316284,52 163.99999952316284,61 191.99999904632568,61"
+            },
+            "src": {
+                "port": "output",
+                "process": "workflowtrigger1"
+            },
+            "tgt": {
+                "port": "in",
+                "process": "tofile1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "250.99999904632568,52 290.9999990463257,52"
+            },
+            "src": {
+                "port": "file",
+                "process": "tofile1"
+            },
+            "tgt": {
+                "port": "ref",
+                "process": "readfile1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "419.9999990463257,43 447.9999985694885,43 447.9999985694885,52 475.99999809265137,52"
+            },
+            "src": {
+                "port": "file",
+                "process": "readfile1"
+            },
+            "tgt": {
+                "port": "in",
+                "process": "wiretap1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "604.9999980926514,52 632.9999976158142,52 632.9999976158142,43 660.999997138977,43"
+            },
+            "src": {
+                "port": "out",
+                "process": "wiretap1"
+            },
+            "tgt": {
+                "port": "ininterface",
+                "process": "tostringconverter1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "1073.9999961853027,52 1101.9999957084656,52 1101.9999957084656,61 1129.9999952316284,61"
+            },
+            "src": {
+                "port": "out",
+                "process": "wiretap2"
+            },
+            "tgt": {
+                "port": "in",
+                "process": "tofile2"
+            }
+        },
+        {
+            "metadata": {
+                "points": "1188.9999952316284,52 1228.9999952316284,52"
+            },
+            "src": {
+                "port": "file",
+                "process": "tofile2"
+            },
+            "tgt": {
+                "port": "file",
+                "process": "writefile1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "904.9999961853027,61 925,61 925,52 944.9999961853027,52"
+            },
+            "src": {
+                "port": "output",
+                "process": "python3operator1"
+            },
+            "tgt": {
+                "port": "in",
+                "process": "wiretap2"
+            }
+        },
+        {
+            "metadata": {
+                "points": "719.999997138977,52 748,52 748,61 775.9999961853027,61"
+            },
+            "src": {
+                "port": "outstring",
+                "process": "tostringconverter1"
+            },
+            "tgt": {
+                "port": "input",
+                "process": "python3operator1"
+            }
+        }
+    ],
+    "inports": {},
+    "outports": {}
+}

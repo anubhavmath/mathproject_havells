@@ -1,0 +1,9 @@
+{
+    "description": "",
+    "name": "pipeline_consumer",
+    "fromTemplate": "com.sap.dsp.templates.python_consumer_template",
+    "createdAt": "2021-08-04T09:41:52Z",
+    "createdBy": "pritamjena",
+    "modifiedAt": "2021-08-04T09:41:52Z",
+    "modifiedBy": "pritamjena"
+}

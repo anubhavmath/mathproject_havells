@@ -1,0 +1,60 @@
+{
+    "description": "",
+    "processes": {
+        "wiretap2": {
+            "component": "com.sap.util.wiretap",
+            "metadata": {
+                "label": "Wiretap",
+                "x": 535,
+                "y": 117,
+                "height": 80,
+                "width": 120,
+                "ui": "dynpath",
+                "config": {}
+            }
+        },
+        "python3operator1": {
+            "component": "com.sap.system.python3Operator",
+            "metadata": {
+                "label": "Python3 Operator",
+                "x": 364,
+                "y": 113,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {
+                    "script": "from datetime import datetime\nnow = datetime.now()\ncurrent_time = now.strftime('%H:%M:%S')\napi.send('out2', 'Ping @ ' + current_time)\n"
+                },
+                "additionaloutports": [
+                    {
+                        "name": "out",
+                        "type": "message"
+                    },
+                    {
+                        "name": "out2",
+                        "type": "string"
+                    }
+                ]
+            }
+        }
+    },
+    "groups": [],
+    "connections": [
+        {
+            "metadata": {
+                "points": "488,162 509,162 509,157 530,157"
+            },
+            "src": {
+                "port": "out2",
+                "process": "python3operator1"
+            },
+            "tgt": {
+                "port": "in",
+                "process": "wiretap2"
+            }
+        }
+    ],
+    "inports": {},
+    "outports": {},
+    "properties": {}
+}

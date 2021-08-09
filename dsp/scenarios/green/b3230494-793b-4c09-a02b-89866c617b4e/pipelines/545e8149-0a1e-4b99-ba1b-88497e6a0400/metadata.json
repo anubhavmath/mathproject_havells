@@ -1,0 +1,9 @@
+{
+    "description": "",
+    "name": "model_train",
+    "fromTemplate": "com.sap.dsp.templates.python_producer_template",
+    "createdAt": "2021-08-03T10:57:39Z",
+    "createdBy": "sourav",
+    "modifiedAt": "2021-08-03T10:57:39Z",
+    "modifiedBy": "sourav"
+}

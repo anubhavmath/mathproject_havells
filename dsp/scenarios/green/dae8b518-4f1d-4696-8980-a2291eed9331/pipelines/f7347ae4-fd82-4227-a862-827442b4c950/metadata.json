@@ -1,0 +1,9 @@
+{
+    "description": "",
+    "name": "ml_pipeline",
+    "fromTemplate": "com.sap.dsp.templates.python_producer_template",
+    "createdAt": "2021-08-04T07:44:32Z",
+    "createdBy": "swapnil",
+    "modifiedAt": "2021-08-04T07:44:32Z",
+    "modifiedBy": "swapnil"
+}

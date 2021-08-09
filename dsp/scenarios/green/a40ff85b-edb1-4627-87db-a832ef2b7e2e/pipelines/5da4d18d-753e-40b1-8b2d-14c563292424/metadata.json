@@ -1,0 +1,9 @@
+{
+    "description": "",
+    "name": "Titanic",
+    "fromTemplate": "com.sap.dsp.templates.python_producer_template",
+    "createdAt": "2021-08-04T13:40:58Z",
+    "createdBy": "manisha",
+    "modifiedAt": "2021-08-04T13:40:58Z",
+    "modifiedBy": "manisha"
+}

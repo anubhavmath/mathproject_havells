@@ -1,0 +1,346 @@
+{
+    "properties": {},
+    "description": "ml_trial - pipeline2",
+    "processes": {
+        "python3operator1": {
+            "component": "com.sap.system.python3Operator",
+            "metadata": {
+                "label": "Python3",
+                "x": 285,
+                "y": 130.99999976158142,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {
+                    "metadata": {},
+                    "script": "# Example Python script to perform training on input data & generate Metrics & Model Blob\n\ndef on_input(data):\n    import pandas as pd\n    import io\n    from sklearn.ensemble import RandomForestClassifier\n    \n    df_data = pd.read_csv(io.StringIO(data), sep=\",\")\n    \n    data_prep = pd.get_dummies(df_data,prefix='embark',columns=['Embarked'])\n    \n    X = data_prep.drop('Survived',axis=1)\n    y = data_prep['Survived']\n    \n    # Train regression\n\n    from sklearn.model_selection import train_test_split\n    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\n\n    clf = RandomForestClassifier(max_depth=2, random_state=0)\n    clf.fit(X_train, y_train)\n    y_pred = clf.predict(X_test)\n    \n    \n    from sklearn.metrics import accuracy_score\n    accuracy_score = accuracy_score(y_test, y_pred)\n\n\n    # to send metrics to the Submit Metrics operator, create a Python dictionary of key-value pairs\n    metrics_dict = {\"accuracy\": str(accuracy_score)}\n    \n    # send the metrics to the output port - Submit Metrics operator will use this to persist the metrics \n    api.send(\"metrics\", api.Message(metrics_dict))\n\n    # create & send the model blob to the output port - Artifact Producer operator will use this to persist the model and create an artifact ID\n    import pickle\n    model_blob = pickle.dumps(clf)\n    api.send(\"modelBlob\", model_blob)\n    \napi.set_port_callback(\"input\", on_input)\n\n"
+                },
+                "additionalinports": [
+                    {
+                        "name": "input",
+                        "type": "string"
+                    }
+                ],
+                "additionaloutports": [
+                    {
+                        "name": "metrics",
+                        "type": "message"
+                    },
+                    {
+                        "name": "modelBlob",
+                        "type": "blob"
+                    }
+                ]
+            }
+        },
+        "python3operator2": {
+            "component": "com.sap.system.python3Operator",
+            "metadata": {
+                "label": "Operators Complete",
+                "x": 1002.9999961853027,
+                "y": 130.99999976158142,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {
+                    "script": "# When both input ports signals arive, the Artifact Producer & Submit Metrics have completed - safe to terminate the graph.\n\ndef on_inputs_ready(metrics_resp, artifact_id):\n    # both input ports have data - previous operators have completed. Send a message as output to stop the graph\n    api.send(\"output\", api.Message(\"Operators complete.\"))\n\napi.set_port_callback([\"metricsResponse\", \"artifactId\"], on_inputs_ready)\n\n"
+                },
+                "additionalinports": [
+                    {
+                        "name": "metricsResponse",
+                        "type": "message"
+                    },
+                    {
+                        "name": "artifactId",
+                        "type": "string"
+                    }
+                ],
+                "additionaloutports": [
+                    {
+                        "name": "output",
+                        "type": "message"
+                    }
+                ]
+            }
+        },
+        "submitmetrics1": {
+            "component": "com.sap.ml.submitMetrics",
+            "metadata": {
+                "label": "Submit Metrics",
+                "x": 485.9999990463257,
+                "y": 12,
+                "height": 80,
+                "width": 120,
+                "extensible": false,
+                "config": {}
+            }
+        },
+        "graphterminator1": {
+            "component": "com.sap.util.graphTerminator",
+            "metadata": {
+                "label": "Graph Terminator",
+                "x": 1171.9999961853027,
+                "y": 130.99999976158142,
+                "height": 80,
+                "width": 120,
+                "config": {}
+            }
+        },
+        "tostringconverter2": {
+            "component": "com.sap.util.toStringConverter",
+            "metadata": {
+                "label": "ToString Converter",
+                "x": 186,
+                "y": 145.99999976158142,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        },
+        "tomessageconverter1": {
+            "component": "com.sap.util.toMessageConverter",
+            "metadata": {
+                "label": "ToMessage Converter",
+                "x": 520.4999990463257,
+                "y": 132,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        },
+        "artifactproducer1": {
+            "component": "com.sap.ml.artifact.producer.v2",
+            "metadata": {
+                "label": "Artifact Producer",
+                "x": 686.9999980926514,
+                "y": 131.49999976158142,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {
+                    "artifactKind": "model",
+                    "artifactName": "${newArtifactName}"
+                }
+            }
+        },
+        "readfile2": {
+            "component": "com.sap.file.read",
+            "metadata": {
+                "label": "Read File",
+                "x": 17,
+                "y": 130.99999976158142,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "mode": "Once",
+                    "path": "/shared/havells_trail/raw/data_clean.csv",
+                    "connection": {
+                        "configurationType": "Connection Management",
+                        "connectionID": "DI_DATA_LAKE"
+                    }
+                }
+            }
+        },
+        "tostringconverter3": {
+            "component": "com.sap.util.toStringConverter",
+            "metadata": {
+                "label": "ToString Converter",
+                "x": 887.999997138977,
+                "y": 160.49999952316284,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        },
+        "writefile1": {
+            "component": "com.sap.file.write",
+            "metadata": {
+                "label": "Write File",
+                "x": 485.9999990463257,
+                "y": 222,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "connection": {
+                        "configurationType": "Connection Management",
+                        "connectionID": "DI_DATA_LAKE"
+                    },
+                    "pathMode": "Static with placeholders",
+                    "path": "/shared/havells_trail/raw/titanicmodel",
+                    "mode": "Overwrite",
+                    "joinBatches": false
+                }
+            }
+        }
+    },
+    "groups": [
+        {
+            "name": "group3",
+            "nodes": [
+                "python3operator1"
+            ],
+            "metadata": {
+                "description": "Group"
+            },
+            "tags": {
+                "titanicdoc": ""
+            }
+        },
+        {
+            "name": "group1",
+            "nodes": [
+                "python3operator2"
+            ],
+            "metadata": {
+                "description": "Group"
+            }
+        }
+    ],
+    "connections": [
+        {
+            "metadata": {
+                "points": "409,161.99999976158142 436.99999952316284,161.99999976158142 436.99999952316284,52 480.9999990463257,52"
+            },
+            "src": {
+                "port": "metrics",
+                "process": "python3operator1"
+            },
+            "tgt": {
+                "port": "metrics",
+                "process": "submitmetrics1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "609.9999990463257,52 637.9999985694885,52 637.9999985694885,102.50000023841858 838.9999976158142,102.50000023841858 838.9999976158142,131.5 969.9999966621399,131.5 969.9999966621399,161.99999976158142 997.9999961853027,161.99999976158142"
+            },
+            "src": {
+                "port": "response",
+                "process": "submitmetrics1"
+            },
+            "tgt": {
+                "port": "metricsResponse",
+                "process": "python3operator2"
+            }
+        },
+        {
+            "metadata": {
+                "points": "1126.9999961853027,170.99999976158142 1166.9999961853027,170.99999976158142"
+            },
+            "src": {
+                "port": "output",
+                "process": "python3operator2"
+            },
+            "tgt": {
+                "port": "stop",
+                "process": "graphterminator1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "141,161.99999976158142 181,161.99999976158142"
+            },
+            "src": {
+                "port": "file",
+                "process": "readfile2"
+            },
+            "tgt": {
+                "port": "ininterface",
+                "process": "tostringconverter2"
+            }
+        },
+        {
+            "metadata": {
+                "points": "240,170.99999976158142 280,170.99999976158142"
+            },
+            "src": {
+                "port": "outstring",
+                "process": "tostringconverter2"
+            },
+            "tgt": {
+                "port": "input",
+                "process": "python3operator1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "810.9999980926514,153.49999976158142 854.9999976158142,153.49999976158142 854.9999976158142,194.49999952316284 882.999997138977,194.49999952316284"
+            },
+            "src": {
+                "port": "outArtifact",
+                "process": "artifactproducer1"
+            },
+            "tgt": {
+                "port": "inmessage",
+                "process": "tostringconverter3"
+            }
+        },
+        {
+            "metadata": {
+                "points": "941.999997138977,185.49999952316284 969.9999966621399,185.49999952316284 969.9999966621399,179.99999976158142 997.9999961853027,179.99999976158142"
+            },
+            "src": {
+                "port": "outstring",
+                "process": "tostringconverter3"
+            },
+            "tgt": {
+                "port": "artifactId",
+                "process": "python3operator2"
+            }
+        },
+        {
+            "metadata": {
+                "points": "810.9999980926514,189.49999976158142 838.9999976158142,189.49999976158142 838.9999976158142,239.49999928474426 653.9999985694885,239.49999928474426 653.9999985694885,329.99999952316284 452.99999952316284,329.99999952316284 452.99999952316284,262 480.9999990463257,262"
+            },
+            "src": {
+                "port": "outFileSend",
+                "process": "artifactproducer1"
+            },
+            "tgt": {
+                "port": "file",
+                "process": "writefile1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "609.9999990463257,253 637.9999985694885,253 637.9999985694885,180.49999976158142 681.9999980926514,180.49999976158142"
+            },
+            "src": {
+                "port": "file",
+                "process": "writefile1"
+            },
+            "tgt": {
+                "port": "inFileReturn",
+                "process": "artifactproducer1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "409,179.99999976158142 452.99999952316284,179.99999976158142 452.99999952316284,148 515.4999990463257,148"
+            },
+            "src": {
+                "port": "modelBlob",
+                "process": "python3operator1"
+            },
+            "tgt": {
+                "port": "inbody",
+                "process": "tomessageconverter1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "574.4999990463257,157 637.9999985694885,157 637.9999985694885,162.49999976158142 681.9999980926514,162.49999976158142"
+            },
+            "src": {
+                "port": "out",
+                "process": "tomessageconverter1"
+            },
+            "tgt": {
+                "port": "inArtifact",
+                "process": "artifactproducer1"
+            }
+        }
+    ],
+    "inports": {},
+    "outports": {}
+}

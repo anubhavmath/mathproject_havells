@@ -1,0 +1,248 @@
+{
+    "properties": {},
+    "icon": "",
+    "description": "ml_trial - pipeline_consumer2",
+    "processes": {
+        "python3operator1": {
+            "component": "com.sap.system.python3Operator",
+            "metadata": {
+                "label": "Python36 - Inference",
+                "x": 900.9999961853027,
+                "y": 39.99999952316284,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {
+                    "metadata": {},
+                    "script": "import json\r\n\r\n# Global vars to keep track of model status\r\nmodel = None\r\nmodel_ready = False\r\n\r\n# Validate input data is JSON\r\ndef is_json(data):\r\n  try:\r\n    json_object = json.loads(data)\r\n  except ValueError as e:\r\n    return False\r\n  return True\r\n\r\n# When Model Blob reaches the input port\r\ndef on_model(model_blob):\r\n    import pickle\r\n    global model\r\n    global model_ready\r\n\r\n    model = pickle.loads(model_blob)\r\n    model_ready = True\r\n    api.logger.info(\"Model Received & Ready\")\r\n\r\n# Client POST request received\r\ndef on_input(msg):\r\n    error_message = \"\"\r\n    success = False\r\n    prediction = None\r\n    \r\n    try:\r\n        api.logger.info(\"POST request received from Client - checking if model is ready\")\r\n        if model_ready:\r\n            api.logger.info(\"Model Ready\")\r\n            api.logger.info(\"Received data from client - validating json input\")\r\n            \r\n            user_data = msg.body.decode('utf-8')\r\n            # Received message from client, verify json data is valid\r\n            if is_json(user_data):\r\n                api.logger.info(\"Received valid json data from client - ready to use\")\r\n                \r\n                # apply your model\r\n                # obtain your results\r\n                success = True\r\n                survive = json.loads(user_data)['input']\r\n                prediction = model.predict([survive])\r\n                #prediction = [survive]\r\n\r\n            else:\r\n                api.logger.info(\"Invalid JSON received from client - cannot apply model.\")\r\n                error_message = \"Invalid JSON provided in request: \" + user_data\r\n                success = False\r\n        else:\r\n            api.logger.info(\"Model has not yet reached the input port - try again.\")\r\n            error_message = \"Model has not yet reached the input port - try again.\"\r\n            success = False\r\n    except Exception as e:\r\n        api.logger.error(e)\r\n        error_message = \"An error occurred: \" + str(e)\r\n    \r\n    if success:\r\n        # apply carried out successfully, send a response to the user\r\n        msg.body = json.dumps({'survived prediction': int(prediction[0])})\r\n    else:\r\n        msg.body = json.dumps({'Error': error_message})\r\n    \r\n    new_attributes = {'message.request.id': msg.attributes['message.request.id']}\r\n    msg.attributes =  new_attributes\r\n    api.send('output', msg)\r\n    \r\napi.set_port_callback(\"model\", on_model)\r\napi.set_port_callback(\"input\", on_input)\r\n"
+                },
+                "additionalinports": [
+                    {
+                        "name": "input",
+                        "type": "message"
+                    },
+                    {
+                        "name": "model",
+                        "type": "blob"
+                    }
+                ],
+                "additionaloutports": [
+                    {
+                        "name": "output",
+                        "type": "message"
+                    }
+                ]
+            }
+        },
+        "openapiservlow11": {
+            "component": "com.sap.openapi.server",
+            "metadata": {
+                "label": "OpenAPI Servlow",
+                "x": 1069.9999961853027,
+                "y": 39.99999952316284,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "basePath": "${deployment}",
+                    "timeout": 300000,
+                    "websocket": true,
+                    "swaggerSpec": "{\n   \"schemes\":[\n      \"http\",\n      \"https\"\n   ],\n   \"swagger\":\"2.0\",\n   \"info\":{\n      \"description\":\"This is an example of using the OpenAPI Servlow to carry out inference with an existing model.\",\n      \"title\":\"OpenAPI demo\",\n      \"termsOfService\":\"http://www.sap.com/vora/terms/\",\n      \"contact\":{\n\n      },\n      \"license\":{\n         \"name\":\"Apache 2.0\",\n         \"url\":\"http://www.apache.org/licenses/LICENSE-2.0.html\"\n      },\n      \"version\":\"1.0.0\"\n   },\n   \"basePath\":\"/$deployment\",\n   \"paths\":{\n      \"/v1/uploadjson\":{\n         \"post\":{\n            \"description\":\"Upload data in json format\",\n            \"consumes\":[\n               \"application/json\"\n            ],\n            \"produces\":[\n               \"application/json\"\n            ],\n            \"summary\":\"Upload JSON data to be used in the Python operator's script\",\n            \"operationId\":\"upload\",\n            \"parameters\":[\n               {\n                  \"type\":\"object\",\n                  \"description\":\"json data\",\n                  \"name\":\"body\",\n                  \"in\":\"body\",\n                  \"required\":true\n               }\n            ],\n            \"responses\":{\n               \"200\":{\n                  \"description\":\"Data uploaded\"\n               },\n               \"500\":{\n                  \"description\":\"Error during upload of json\"\n               }\n            }\n         }\n      }\n   },\n   \"definitions\":{\n   },\n   \"securityDefinitions\":{\n      \"UserSecurity\":{\n         \"type\":\"basic\"\n      }\n   }\n}",
+                    "oneway": false
+                }
+            },
+            "name": "openapiservlow1"
+        },
+        "constantgenerator1": {
+            "component": "com.sap.util.constantGenerator",
+            "metadata": {
+                "label": "Submit Artifact Name",
+                "x": 17,
+                "y": 25.99999976158142,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {
+                    "content": "{\"artifact\": {\"id\": \"${ARTIFACT:MODEL}\"}}"
+                }
+            }
+        },
+        "artifactconsumer1": {
+            "component": "com.sap.ml.artifact.consumer.v2",
+            "metadata": {
+                "label": "Artifact Consumer",
+                "x": 300.9999990463257,
+                "y": 25.99999976158142,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {}
+            }
+        },
+        "readfile1": {
+            "component": "com.sap.file.read",
+            "metadata": {
+                "label": "Read File",
+                "x": 584.9999980926514,
+                "y": 25.99999976158142,
+                "height": 80,
+                "width": 120,
+                "config": {}
+            }
+        },
+        "toblobconverter1": {
+            "component": "com.sap.util.toBlobConverter",
+            "metadata": {
+                "label": "ToBlob Converter",
+                "x": 769.999997138977,
+                "y": 40.99999976158142,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        },
+        "tofile1": {
+            "component": "com.sap.file.toFile",
+            "metadata": {
+                "label": "To File",
+                "x": 485.99999809265137,
+                "y": 40.99999976158142,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        },
+        "tomessageconverter1": {
+            "component": "com.sap.util.toMessageConverter",
+            "metadata": {
+                "label": "ToMessage Converter",
+                "x": 201.99999904632568,
+                "y": 40.99999976158142,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        }
+    },
+    "groups": [
+        {
+            "name": "group1",
+            "nodes": [
+                "python3operator1"
+            ],
+            "metadata": {
+                "description": "Group"
+            },
+            "tags": {
+                "titanicdoc": ""
+            }
+        }
+    ],
+    "connections": [
+        {
+            "metadata": {
+                "points": "1193.9999961853027,79.99999952316284 1221.9999957084656,79.99999952316284 1221.9999957084656,12 867.9999966621399,12 867.9999966621399,70.99999952316284 895.9999961853027,70.99999952316284"
+            },
+            "src": {
+                "port": "out",
+                "process": "openapiservlow11"
+            },
+            "tgt": {
+                "port": "input",
+                "process": "python3operator1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "1024.9999961853027,79.99999952316284 1064.9999961853027,79.99999952316284"
+            },
+            "src": {
+                "port": "output",
+                "process": "python3operator1"
+            },
+            "tgt": {
+                "port": "ret",
+                "process": "openapiservlow11"
+            }
+        },
+        {
+            "metadata": {
+                "points": "141,65.99999976158142 168.99999952316284,65.99999976158142 168.99999952316284,74.99999976158142 196.99999904632568,74.99999976158142"
+            },
+            "src": {
+                "port": "out",
+                "process": "constantgenerator1"
+            },
+            "tgt": {
+                "port": "instring",
+                "process": "tomessageconverter1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "255.99999904632568,65.99999976158142 295.9999990463257,65.99999976158142"
+            },
+            "src": {
+                "port": "out",
+                "process": "tomessageconverter1"
+            },
+            "tgt": {
+                "port": "inArtifact",
+                "process": "artifactconsumer1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "424.9999990463257,56.99999976158142 452.9999985694885,56.99999976158142 452.9999985694885,74.99999976158142 480.99999809265137,74.99999976158142"
+            },
+            "src": {
+                "port": "outArtifact",
+                "process": "artifactconsumer1"
+            },
+            "tgt": {
+                "port": "in",
+                "process": "tofile1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "539.9999980926514,65.99999976158142 579.9999980926514,65.99999976158142"
+            },
+            "src": {
+                "port": "file",
+                "process": "tofile1"
+            },
+            "tgt": {
+                "port": "ref",
+                "process": "readfile1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "708.9999980926514,56.99999976158142 736.9999976158142,56.99999976158142 736.9999976158142,65.99999976158142 764.999997138977,65.99999976158142"
+            },
+            "src": {
+                "port": "file",
+                "process": "readfile1"
+            },
+            "tgt": {
+                "port": "ininterface",
+                "process": "toblobconverter1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "823.999997138977,65.99999976158142 851.9999966621399,65.99999976158142 851.9999966621399,88.99999952316284 895.9999961853027,88.99999952316284"
+            },
+            "src": {
+                "port": "outbytearray",
+                "process": "toblobconverter1"
+            },
+            "tgt": {
+                "port": "model",
+                "process": "python3operator1"
+            }
+        }
+    ],
+    "inports": {},
+    "outports": {}
+}

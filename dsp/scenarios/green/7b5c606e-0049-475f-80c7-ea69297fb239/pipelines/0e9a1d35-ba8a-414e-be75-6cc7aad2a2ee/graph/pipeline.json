@@ -1,0 +1,130 @@
+{
+    "properties": {},
+    "description": "forecast_product - customcode",
+    "processes": {
+        "python3operator1": {
+            "component": "com.sap.system.python3Operator",
+            "metadata": {
+                "label": "Python3 Operator",
+                "x": 600,
+                "y": 89,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {
+                    "script": "import pandas as pd\r\nimport io, os\r\nimport numpy as np\r\nimport sys\r\n\r\nsys.path.append('/vrep/vflow/dockerfiles/testcustom/')\r\n\r\nimport dataClean as dc\r\n\r\ndef on_input(data):\r\n    data_stream=io.StringIO(data)\r\n    df=pd.read_csv(data_stream, header = 0)\r\n    \r\n    final = dc.datacleaner(df)\r\n    \r\n    api.send(\"output\", api.Message(body=final.to_csv(index=False, header=True)))\r\n\r\napi.set_port_callback(\"input\", on_input)"
+                },
+                "additionalinports": [
+                    {
+                        "name": "input",
+                        "type": "string"
+                    }
+                ],
+                "additionaloutports": [
+                    {
+                        "name": "output",
+                        "type": "message"
+                    }
+                ]
+            }
+        },
+        "readfile1": {
+            "component": "com.sap.file.read",
+            "metadata": {
+                "label": "Read File",
+                "x": 286,
+                "y": 103,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "mode": "Once",
+                    "connection": {
+                        "configurationType": "Connection Management",
+                        "connectionID": "DI_DATA_LAKE"
+                    },
+                    "path": "/shared/havells_trail/raw/clean_forecast.csv"
+                }
+            }
+        },
+        "tostringconverter1": {
+            "component": "com.sap.util.toStringConverter",
+            "metadata": {
+                "label": "ToString Converter",
+                "x": 481,
+                "y": 113,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        },
+        "wiretap1": {
+            "component": "com.sap.util.wiretap",
+            "metadata": {
+                "label": "Wiretap",
+                "x": 820,
+                "y": 94,
+                "height": 80,
+                "width": 120,
+                "ui": "dynpath",
+                "config": {}
+            }
+        }
+    },
+    "groups": [
+        {
+            "name": "group3",
+            "nodes": [
+                "python3operator1"
+            ],
+            "metadata": {
+                "description": "Group"
+            },
+            "tags": {
+                "testcust": ""
+            }
+        }
+    ],
+    "connections": [
+        {
+            "metadata": {
+                "points": "410,134 443,134 443,129 476,129"
+            },
+            "src": {
+                "port": "file",
+                "process": "readfile1"
+            },
+            "tgt": {
+                "port": "ininterface",
+                "process": "tostringconverter1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "535,138 565,138 565,129 595,129"
+            },
+            "src": {
+                "port": "outstring",
+                "process": "tostringconverter1"
+            },
+            "tgt": {
+                "port": "input",
+                "process": "python3operator1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "724,129 769.5,129 769.5,134 815,134"
+            },
+            "src": {
+                "port": "output",
+                "process": "python3operator1"
+            },
+            "tgt": {
+                "port": "in",
+                "process": "wiretap1"
+            }
+        }
+    ],
+    "inports": {},
+    "outports": {}
+}
