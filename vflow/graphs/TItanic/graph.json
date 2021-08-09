@@ -6,9 +6,9 @@
             "component": "com.sap.dh.trigger",
             "metadata": {
                 "label": "Workflow Trigger",
-                "x": 12,
+                "x": 13,
                 "y": 12,
-                "height": 80,
+                "height": 80 ,
                 "width": 120,
                 "extensible": true,
                 "config": {}
